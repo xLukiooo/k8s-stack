@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K8s 3-Tier Demo</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.offline { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card h2 {
+      font-size: 1.15rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    input[type="text"], input[type="number"] {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      background: #0b1120;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #0b1120;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #ffffff;
+      width: 100%;
+      padding: 0.85rem;
+      font-size: 1rem;
+    }
+
+    .btn-danger:hover {
+      opacity: 0.9;
+    }
+
+    .btn-danger:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .task-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    .task-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .stress-box {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px dashed var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .stress-box code {
+      color: var(--warning);
+      font-family: monospace;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.15rem 0.3rem;
+      border-radius: 4px;
+    }
+
+    .log-output {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      margin-top: 0.5rem;
+      min-height: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div>
+        <h1>☸️ Kubernetes 3-Tier Demo</h1>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+          Frontend (Nginx) ➔ Backend (FastAPI) ➔ Database (PostgreSQL)
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <div class="status-badge">
+          <div id="api-dot" class="status-dot"></div>
+          <span id="api-status">API: Sprawdzanie...</span>
+        </div>
+        <div class="status-badge">
+          <div id="db-dot" class="status-dot"></div>
+          <span id="db-status">Postgres: Sprawdzanie...</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>📝 Baza danych (PostgreSQL CRUD)</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">
+          Wpisy są trwale zapisywane w wolumenie PersistentVolumeClaim (PVC).
+        </p>
+        <form id="task-form" class="form-group">
+          <input type="text" id="task-input" placeholder="Wpisz nowe zadanie..." required>
+          <button type="submit" class="btn-primary">Dodaj</button>
+        </form>
+        <ul id="task-list" class="task-list">
+          <li style="color: var(--text-muted); text-align: center; padding: 1rem;">Ładowanie danych...</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>🔥 Test Skalowania HPA (CPU Burn)</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">
+          Kliknięcie generuje intensywne obliczenia kryptograficzne na podach backendu.
+        </p>
+        <div class="form-group" style="align-items: center;">
+          <label style="font-size: 0.85rem; color: var(--text-muted);">Liczba wątków:</label>
+          <input type="number" id="stress-threads" value="4" min="1" max="15">
+        </div>
+        <button id="stress-btn" class="btn-danger" onclick="triggerStressTest()">
+          🚀 Uruchom obciążenie CPU (Test HPA)
+        </button>
+        <div class="stress-box">
+          Podgląd skalowania w terminalu:
+          <br>
+          <code>kubectl get hpa -w</code>
+          <br>
+          <code>kubectl get pods -l app=backend -w</code>
+          <div id="stress-log" class="log-output"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/ready');
+        const data = await res.json();
+        
+        const apiDot = document.getElementById('api-dot');
+        const apiStatus = document.getElementById('api-status');
+        const dbDot = document.getElementById('db-dot');
+        const dbStatus = document.getElementById('db-status');
+
+        if (res.ok && data.status === 'ready') {
+          apiDot.className = 'status-dot online';
+          apiStatus.textContent = `API: OK (${data.pod || 'Pod'})`;
+          dbDot.className = 'status-dot online';
+          dbStatus.textContent = 'Postgres: Połączono';
+        } else {
+          apiDot.className = 'status-dot online';
+          apiStatus.textContent = 'API: OK';
+          dbDot.className = 'status-dot offline';
+          dbStatus.textContent = 'Postgres: Błąd połączenia';
+        }
+      } catch (err) {
+        document.getElementById('api-dot').className = 'status-dot offline';
+        document.getElementById('api-status').textContent = 'API: Niedostępne';
+        document.getElementById('db-dot').className = 'status-dot offline';
+        document.getElementById('db-status').textContent = 'Postgres: Niedostępne';
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(`${API_BASE}/tasks`);
+        if (!res.ok) throw new Error('Błąd pobierania zadań');
+        const tasks = await res.json();
+        const list = document.getElementById('task-list');
+        list.innerHTML = '';
+
+        if (tasks.length === 0) {
+          list.innerHTML = '<li style="color: var(--text-muted); text-align: center; padding: 1rem;">Brak zadań w bazie. Dodaj pierwsze!</li>';
+          return;
+        }
+
+        tasks.forEach(t => {
+          const li = document.createElement('li');
+          li.className = 'task-item';
+          const dateStr = t.created_at ? new Date(t.created_at).toLocaleTimeString() : '';
+          li.innerHTML = `
+            <span>${escapeHtml(t.title)}</span>
+            <span class="task-date">${dateStr}</span>
+          `;
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById('task-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('task-input');
+      const title = input.value.trim();
+      if (!title) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title })
+        });
+        if (res.ok) {
+          input.value = '';
+          await loadTasks();
+        }
+      } catch (err) {
+        alert('Nie udało się dodać zadania: ' + err.message);
+      }
+    });
+
+    async function triggerStressTest() {
+      const btn = document.getElementById('stress-btn');
+      const log = document.getElementById('stress-log');
+      const threads = parseInt(document.getElementById('stress-threads').value) || 4;
+
+      btn.disabled = true;
+      log.textContent = `Wysyłam ${threads} równoległych zapytań obciążeniowych CPU...`;
+
+      const requests = [];
+      for (let i = 0; i < threads; i++) {
+        requests.push(
+          fetch(`${API_BASE}/cpu-burn?duration_seconds=4.0`)
+            .then(r => r.json())
+            .catch(err => ({ error: err.message }))
+        );
+      }
+
+      try {
+        const results = await Promise.all(requests);
+        const pods = results.map(r => r.pod || 'unknown');
+        const uniquePods = [...new Set(pods)];
+        log.textContent = `Zakończono! Zadania obsłużone przez pody: ${uniquePods.join(', ')}`;
+      } catch (e) {
+        log.textContent = `Błąd podczas testu: ${e.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    checkHealth();
+    loadTasks();
+    setInterval(checkHealth, 5000);
+  </script>
+</body>
+</html>
