@@ -33,3 +33,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Added by ggshield
+.cache_ggshield
