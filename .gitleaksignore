@@ -1,0 +1,2 @@
+01-database/secret.example.yaml:kubernetes-secret-yaml:2
+01-database/postgres/secret.example.yaml:kubernetes-secret-yaml:2

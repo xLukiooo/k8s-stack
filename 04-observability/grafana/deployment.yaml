@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+  namespace: k8s-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      serviceAccountName: grafana-service-account
+      containers:
+      - image: grafana/grafana:10.4.1
+        name: grafana
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: grafana-datasources-volume
+          mountPath: /etc/grafana/provisioning/datasources
+      volumes:
+      - name: grafana-datasources-volume
+        configMap:
+          name: grafana-datasources

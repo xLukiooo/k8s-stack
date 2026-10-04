@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus
+  name: prometheus
+  namespace: k8s-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus-service-account
+      containers:
+      - image: prom/prometheus:v2.51.0
+        name: prometheus
+        args:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+          - "--storage.tsdb.path=/prometheus"
+          - "--web.enable-lifecycle"
+        ports:
+        - containerPort: 9090
+          name: web
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /etc/prometheus
+          name: prometheus-config-volume
+        - mountPath: /prometheus
+          name: prometheus-storage-volume
+      volumes:
+      - configMap:
+          name: prometheus-config
+        name: prometheus-config-volume
+      - emptyDir: {}
+        name: prometheus-storage-volume

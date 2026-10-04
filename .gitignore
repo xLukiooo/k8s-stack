@@ -1,4 +1,5 @@
-01-database/secret.yaml
+secret.yaml
+**/secret.yaml
 *.secret.yaml
 
 __pycache__/

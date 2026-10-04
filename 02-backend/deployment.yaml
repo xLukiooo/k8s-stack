@@ -19,6 +19,10 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: backend-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
       containers:
       - image: xlukiooo/k8s-backend:1.0
         name: k8s-backend

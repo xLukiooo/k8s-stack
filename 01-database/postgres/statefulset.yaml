@@ -16,7 +16,7 @@ spec:
       labels:
         app: postgres
     spec:
-      serviceAccountName: postgress-service-account
+      serviceAccountName: postgres-service-account
       containers:
       - name: postgres
         image: postgres:16-alpine
@@ -59,4 +59,3 @@ spec:
       - name: postgres-data
         persistentVolumeClaim:
           claimName: postgres-pvc
-      
