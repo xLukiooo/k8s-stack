@@ -190,6 +190,8 @@ kubectl get svc -n k8s-demo
 
 Wszystkie serwisy powinny mieć typ `ClusterIP`.
 
+![Status podów w klastrze](docs/img/k8s-pods.png)
+
 ### 3. Otwarcie aplikacji w przeglądarce
 * **Frontend:** http://localhost:8080/
 * **Backend API:** http://localhost:8080/api
@@ -205,6 +207,8 @@ kubectl port-forward svc/grafana-service 3000:3000 -n k8s-demo
 Adres: http://localhost:3000  
 Login: `admin`, hasło: `admin`.
 
+![Dashboard metryk w Grafanie](docs/img/grafana-dashboard.png)
+
 ---
 
 ## Test Autoskalowania (HPA)
@@ -213,7 +217,7 @@ W projekcie skonfigurowano HPA, który skaluje pody backendu przy obciążeniu C
 
 1. W jednym terminalu włącz podgląd HPA:
    ```bash
-   kubectl get hpa backend-hpa -n k8s-demo -w
+   kubectl get hpa backend -n k8s-demo -w
    ```
 
 2. W drugim terminalu uruchom skrypt generujący ruch:
@@ -222,6 +226,8 @@ W projekcie skonfigurowano HPA, który skaluje pody backendu przy obciążeniu C
    ```
 
 Skrypt wysyła równoległe zapytania do endpointu `/api/cpu-burn`. W terminalu z HPA zobaczysz wzrost zużycia CPU i zwiększenie liczby podów z 2 do 5. Po zakończeniu testu liczba podów samoczynnie wróci do 2.
+
+![Autoskalowanie HPA w terminalu](docs/img/hpa-scaling.png)
 
 ---
 

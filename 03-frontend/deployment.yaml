@@ -19,6 +19,7 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
+        fsGroup: 101
       containers:
       - image: xlukiooo/k8s-frontend:1.0
         name: k8s-frontend
@@ -36,3 +37,13 @@ spec:
             memory: 128Mi
           limits:
             memory: 256Mi
+        volumeMounts:
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-pid
+          mountPath: /var/run
+      volumes:
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-pid
+        emptyDir: {}
