@@ -37,7 +37,7 @@ kubectl apply -f 00-infra/
 ---
 
 ### Krok 2: Warstwa danych (`01-database/`)
-Baza danych musi być w pełni zainicjalizowana przed startem backendu. Backend weryfikuje połączenie z bazą przez sondę gotowości (`/ready`) – jeśli baza nie odpowiada, pody backendu nie wejdą w stan `Ready`.
+Baza danych musi być w pełni zainicjalizowana przed startem backendu. Backend weryfikuje połączenie z bazą przez sondę gotowości (`/ready`) - jeśli baza nie odpowiada, pody backendu nie wejdą w stan `Ready`.
 
 1. **PostgreSQL (`01-database/postgres/`)**:
    * Utworzenie sekretu z poświadczeniami (`secret.yaml`).
@@ -68,7 +68,7 @@ Backend odpowiada za obsługę zapytań REST API i logikę aplikacji. Wymaga akt
 * `network-policy.yaml`: Odblokowanie portu 8000 dla Ingress Controllera oraz Prometheusa.
 * `service.yaml`: `ClusterIP` kierujący ruch na port 8000.
 * `deployment.yaml`: Deployment z utwardzonym `securityContext` (`runAsNonRoot: true`, UID `10001`) i sondami `/healthz` oraz `/ready`.
-* `hpa.yaml`: Horizontal Pod Autoscaler monitorujący zużycie CPU (50%) i skalujący pody w zakresie 2–5.
+* `hpa.yaml`: Horizontal Pod Autoscaler monitorujący zużycie CPU (50%) i skalujący pody w zakresie 2-5.
 
 ```bash
 kubectl apply -f 02-backend/

@@ -4,23 +4,21 @@ Projekt demonstracyjny 3-warstwowej aplikacji (Frontend, Backend, Baza danych) u
 
 ---
 
-## O Aplikacji (Co to jest i co robi?)
+## Komponenty aplikacji
 
-Aplikacja to prosty **Task Manager (menedżer zadań)**:
+Aplikacja to **Task Manager**:
 * **Frontend:** Jednostronicowa aplikacja (SPA) serwowana przez Nginx. Pozwala dodawać, przeglądać i usuwać zadania z bazy danych, wyświetla status połączenia z backendem i bazą oraz posiada przycisk do generowania obciążenia CPU.
 * **Backend:** REST API w Pythonie (FastAPI) komunikujące się z bazą danych PostgreSQL. Udostępnia endpointy:
-  * `GET, POST, DELETE /api/tasks` – operacje CRUD na zadaniach.
-  * `GET /healthz` – sonda liveness (sprawdza czy proces Pythona żyje).
-  * `GET /ready` – sonda readiness (wykonuje zapytanie testowe `SELECT 1` do Postgresa).
-  * `GET /api/cpu-burn` – pętla obliczeniowa obciążająca CPU na 2 sekundy (używana do testowania HPA).
-  * `GET /metrics` – metryki aplikacji dla Prometheusa.
+  * `GET, POST, DELETE /api/tasks` - operacje CRUD na zadaniach.
+  * `GET /healthz` - sonda liveness (sprawdza czy proces Pythona żyje).
+  * `GET /ready` - sonda readiness (wykonuje zapytanie testowe `SELECT 1` do Postgresa).
+  * `GET /api/cpu-burn` - pętla obliczeniowa obciążająca CPU na 2 sekundy (używana do testowania HPA).
+  * `GET /metrics` - metryki aplikacji dla Prometheusa.
 * **Baza danych:** PostgreSQL przechowujący tabelę `tasks`.
 
 ---
 
-## Architektura i Rola Poszczególnych Komponentów
-
-Krótkie wyjaśnienie, do czego służy każdy element w projekcie:
+## Moduły infrastruktury
 
 ### 1. `00-infra/` (Infrastruktura bazowa)
 * **`namespace.yaml`:** Logiczna izolacja całego projektu (`k8s-demo`) od innych aplikacji w klastrze.
@@ -41,7 +39,7 @@ Krótkie wyjaśnienie, do czego służy każdy element w projekcie:
 * **Sondy `/healthz` i `/ready`:** 
   * Jeśli proces Pythona się zawiesi, Kubernetes go zrestartuje (`livenessProbe`).
   * Jeśli baza danych jeszcze nie wstała lub ma awarię, pod nie dostanie ruchu od użytkowników (`readinessProbe`).
-* **`hpa.yaml`:** Horizontal Pod Autoscaler – gdy średnie obciążenie CPU na backendzie przekroczy 50%, automatycznie skaluje liczbę podów z 2 do maksymalnie 5.
+* **`hpa.yaml`:** Horizontal Pod Autoscaler - gdy średnie obciążenie CPU na backendzie przekroczy 50%, automatycznie skaluje liczbę podów z 2 do maksymalnie 5.
 * **`network-policy.yaml`:** Zezwala na ruch na port 8000 wyłącznie z Ingressa (zapytania użytkowników) oraz z Prometheusa (pobieranie metryk).
 
 ### 4. `03-frontend/` (Warstwa prezentacji)
@@ -86,9 +84,7 @@ flowchart TD
 
 ---
 
-## Wprowadzone Poprawki i Decyzje Architektoniczne
-
-Podczas przeglądu i budowy projektu rozwiązano następujące kwestie:
+## Decyzje architektoniczne i bezpieczeństwo
 
 ### 1. Zmiana serwisów z NodePort na ClusterIP
 * **Jak było:** Frontend i Grafana miały ustawiony `type: NodePort`.
@@ -108,7 +104,7 @@ Podczas przeglądu i budowy projektu rozwiązano następujące kwestie:
 * **Efekt:** Cały ruch przychodzący w namespace jest domyślnie zablokowany. Pakiety docierają tylko tam, gdzie jawnie istnieje zezwalająca NetworkPolicy (np. backend -> baza, ingress -> frontend).
 
 ### 5. Ochrona haseł przed wrzuceniem do Gita
-* **Sytuacja:** Plik `01-database/postgres/secret.yaml` po przeniesieniu do podfolderu został omyłkowo dodany do Gita – narzędzie Gitleaks zablokowało commit.
+* **Sytuacja:** Plik `01-database/postgres/secret.yaml` po przeniesieniu do podfolderu został omyłkowo dodany do Gita - narzędzie Gitleaks zablokowało commit.
 * **Rozwiązanie:** Zaktualizowano `.gitignore` o wpis `**/secret.yaml`. W repozytorium znajduje się wyłącznie szablon `secret.example.yaml`.
 
 ---
@@ -169,71 +165,50 @@ Podczas przeglądu i budowy projektu rozwiązano następujące kwestie:
 
 ---
 
-## Uruchomienie Projektu
-
-### 1. Automatyczne wdrożenie
-Do uruchomienia całego klastra służy skrypt:
+## Wdrożenie
 
 ```bash
 ./deploy.sh
 ```
 
-Skrypt po kolei tworzy zasoby i czeka na gotowość podów (`kubectl wait`).
-
-*(Jeśli chcesz uruchamiać poszczególne pliki ręcznie, pełny opis kolejności znajdziesz w pliku `DEPLOYMENT_ORDER.md`).*
-
-### 2. Sprawdzenie stanu aplikacji
+### Weryfikacja stanu
 ```bash
 kubectl get pods -n k8s-demo
 kubectl get svc -n k8s-demo
 ```
 
-Wszystkie serwisy powinny mieć typ `ClusterIP`.
-
 ![Status podów w klastrze](docs/img/k8s-pods.png)
+<p align="center"><em>Stan wdrożenia w przestrzeni nazw k8s-demo - wszystkie komponenty w stanie Running, serwisy w trybie ClusterIP.</em></p>
 
-### 3. Otwarcie aplikacji w przeglądarce
-* **Frontend:** http://localhost:8080/
-* **Backend API:** http://localhost:8080/api
-* **Sonda gotowości (baza i backend):** http://localhost:8080/ready
-
-### 4. Otwarcie Grafany
-Ponieważ Grafana jest wewnątrz klastra (`ClusterIP`), łączymy się z nią przez tunel:
-
-```bash
-kubectl port-forward svc/grafana-service 3000:3000 -n k8s-demo
-```
-
-Adres: http://localhost:3000  
-Login: `admin`, hasło: `admin`.
+### Punkty dostępowe
+* Frontend: http://localhost:8080/
+* Backend API: http://localhost:8080/api
+* Sonda gotowości: http://localhost:8080/ready
+* Grafana: `kubectl port-forward svc/grafana-service 3000:3000 -n k8s-demo` (http://localhost:3000, login: `admin`, hasło: `admin`)
 
 ![Dashboard metryk w Grafanie](docs/img/grafana-dashboard.png)
+<p align="center"><em>Wizualizacja metryk HTTP w czasie rzeczywistym w Grafanie na podstawie danych zbieranych przez Prometheusa.</em></p>
 
 ---
 
-## Test Autoskalowania (HPA)
+## Test autoskalowania (HPA)
 
-W projekcie skonfigurowano HPA, który skaluje pody backendu przy obciążeniu CPU powyżej 50%:
+Podgląd stanu autoskalera:
+```bash
+kubectl get hpa backend -n k8s-demo -w
+```
 
-1. W jednym terminalu włącz podgląd HPA:
-   ```bash
-   kubectl get hpa backend -n k8s-demo -w
-   ```
-
-2. W drugim terminalu uruchom skrypt generujący ruch:
-   ```bash
-   ./load-test/test-hpa.sh
-   ```
-
-Skrypt wysyła równoległe zapytania do endpointu `/api/cpu-burn`. W terminalu z HPA zobaczysz wzrost zużycia CPU i zwiększenie liczby podów z 2 do 5. Po zakończeniu testu liczba podów samoczynnie wróci do 2.
+Generowanie obciążenia:
+```bash
+./load-test/test-hpa.sh
+```
 
 ![Autoskalowanie HPA w terminalu](docs/img/hpa-scaling.png)
+<p align="center"><em>Reakcja autoskalera HPA na obciążenie CPU - automatyczne skalowanie backendu z 2 do 5 replik.</em></p>
 
 ---
 
-## Usunięcie Projektu
-
-Aby wyczyścić klaster:
+## Czyszczenie środowiska
 
 ```bash
 ./destroy.sh
